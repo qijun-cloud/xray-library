@@ -1,6 +1,6 @@
 # X-ray Spectra Library
 
-A searchable library of X-ray spectra (XAS, XES, RIXS, PES, RPES), organized by element, compound, technique and edge. It indexes the reprints of the de Groot group (Utrecht University); spectra are digitized from the published figures and added in batches.
+A searchable library of X-ray spectra (XAS, XES, RIXS, PES, RPES), organized by element, compound, technique and edge. It indexes the reprints of the papers; spectra are digitized from the published figures and added in batches.
 
 - **Browse:** open this repository's GitHub Pages website.
 - **Data:** `spectra_library.json`. Each entry has the element, edge, technique, compound, conditions, whether it is experimental or calculated, the source (paper and figure), a confidence level, and `data` as [energy, intensity] pairs.
