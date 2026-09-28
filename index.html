@@ -44,6 +44,14 @@ main{padding:6px 22px 30px;display:grid;gap:14px}
 .legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--mute);margin:8px 0 0}
 .lg{display:inline-flex;align-items:center;gap:5px}.lgbox{width:34px;height:10px;border-radius:3px;background:linear-gradient(90deg,rgba(36,88,214,.1),rgba(36,88,214,.65))}
 .el .sp{position:absolute;top:1px;right:2px;min-width:13px;height:13px;border-radius:7px;background:var(--op);color:#fff;font-size:8.5px;line-height:13px;text-align:center;padding:0 2px;font-weight:700}
+.ptcard h2{font-size:20px;font-weight:700;margin-bottom:12px}
+.ptcard #selInfo{font-size:14px;font-weight:600;color:var(--ink)}
+.ptcard .tab{font-size:17px;font-weight:700;color:#4a5263;padding:9px 18px}
+.ptcard .tab.on{color:var(--acc);border-bottom-width:3px}
+.ptcard .tab .n{font-size:12.5px;font-weight:500;margin-left:5px}
+.ptcard .tab.more{font-weight:600;font-size:15px}
+.ptcard .edgerow .lbl{font-size:13px;font-weight:700;color:var(--ink)}
+.ptcard .edgerow .chip{font-size:13px;font-weight:600;padding:4px 12px}
 .edgerow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 input[type=search],input[type=text],select,textarea,input[type=number]{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;background:#fff}
@@ -78,7 +86,7 @@ textarea{width:100%;height:90px;font-family:ui-monospace,Menlo,monospace;font-si
 <div class="stats" id="stats"></div>
 </header>
 <main>
-<section class="card"><h2><span>Browse by technique and element</span><span class="row"><span class="note" id="selInfo"></span><button class="btn s" id="clrEl">Clear selection</button></span></h2>
+<section class="card ptcard"><h2><span>Browse by technique and element</span><span class="row"><span class="note" id="selInfo"></span><button class="btn s" id="clrEl">Clear selection</button></span></h2>
 <div class="tabs" id="ptTabs"></div>
 <div class="edgerow" id="ptEdges"></div>
 <div class="ptbar">Color by <button class="btn s" id="cbCat">Element type</button><button class="btn s" id="cbPap">Number of papers</button></div><div id="pt"></div><div class="catleg" id="catLeg"></div>
