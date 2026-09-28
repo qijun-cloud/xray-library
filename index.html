@@ -15,8 +15,16 @@ main{padding:6px 22px 30px;display:grid;gap:14px}
 .el small{font-size:9px;line-height:1}
 .el.has{cursor:pointer;color:var(--ink)}.el.has:hover{outline:2px solid var(--acc)}
 .el.sel{background:var(--acc)!important;color:#fff!important;border-color:var(--acc)}
-.el .sp{position:absolute;top:2px;right:3px;width:6px;height:6px;border-radius:50%;background:var(--op)}
+
 .gap{visibility:hidden}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin:-4px 0 10px}
+.tab{border:none;background:none;padding:7px 14px;font:inherit;font-size:13px;color:var(--mute);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}.tab.on{color:var(--acc);border-bottom-color:var(--acc);font-weight:600}
+.tab .n{font-size:11px;color:var(--mute);font-weight:400;margin-left:3px}.tab.more{font-style:italic}
+.legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--mute);margin:8px 0 0}
+.lg{display:inline-flex;align-items:center;gap:5px}.lgbox{width:34px;height:10px;border-radius:3px;background:linear-gradient(90deg,rgba(36,88,214,.1),rgba(36,88,214,.65))}
+.el .sp{position:absolute;top:1px;right:2px;min-width:13px;height:13px;border-radius:7px;background:var(--op);color:#fff;font-size:8.5px;line-height:13px;text-align:center;padding:0 2px;font-weight:700}
+.edgerow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 10px}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 input[type=search],input[type=text],select,textarea,input[type=number]{border:1px solid var(--line);border-radius:6px;padding:6px 8px;font:inherit;background:#fff}
 input[type=search]{min-width:260px;flex:1}
@@ -50,14 +58,18 @@ textarea{width:100%;height:90px;font-family:ui-monospace,Menlo,monospace;font-si
 <div class="stats" id="stats"></div>
 </header>
 <main>
-<section class="card"><h2><span>Elements <span class="note">(click to filter; green dot = digitized spectra available)</span></span><button class="btn s" id="clrEl">Clear</button></h2><div id="pt"></div></section>
+<section class="card"><h2><span>Browse by technique and element</span><span class="row"><span class="note" id="selInfo"></span><button class="btn s" id="clrEl">Clear selection</button></span></h2>
+<div class="tabs" id="ptTabs"></div>
+<div class="edgerow" id="ptEdges"></div>
+<div id="pt"></div>
+<div class="legend"><span class="lg"><span class="lgbox"></span>shade = number of papers</span><span class="lg"><span class="el" style="width:18px;height:14px;aspect-ratio:auto;position:relative;border:none;background:none"><span class="sp" style="top:0;right:0">3</span></span>digitized spectra</span><span class="lg">Click one or more elements to filter (papers must contain all of them).</span></div></section>
 <section class="card">
 <div class="filters" style="margin-bottom:10px"><input type="search" id="q" placeholder="Search title, compound, author, journal… (e.g. LaCoO3, hematite, Ismail)">
 <select id="sort"><option value="yd">Newest first</option><option value="ya">Oldest first</option><option value="t">Title A–Z</option></select>
 <label class="note"><input type="checkbox" id="hasSp"> only with spectra</label></div>
 <div class="row" style="margin-bottom:6px"><span class="lbl">Technique</span><span id="tq" class="row"></span><button class="btn s" id="addTq" title="Add a technique category">+ technique</button></div>
 <div id="tqForm" class="row" style="display:none;margin:0 0 8px 68px"><input type="text" id="tqN" placeholder="Name, e.g. XMCD" style="width:130px"><input type="text" id="tqK" placeholder="Title keywords, separated by |  e.g. MCD|dichroism" style="flex:1;min-width:240px"><button class="btn s p" id="tqSave">Add</button><span class="note" id="tqList"></span></div>
-<div class="row" style="margin-bottom:6px"><span class="lbl">Edge</span><span id="ed" class="row"></span></div>
+
 <div class="row"><span class="lbl">Conditions</span><span class="chip op" id="opChip">Operando / in situ</span>
 <span class="lbl" style="margin-left:14px">Years</span><input type="number" id="y0" style="width:76px"> – <input type="number" id="y1" style="width:76px"></div>
 </section>
@@ -111,7 +123,7 @@ function retag(){const defs=BASE_TECHS.concat(CUSTOM);TECHS=defs.map(d=>d.n);
  [...S.tq].forEach(x=>{if(!TECHS.includes(x))S.tq.delete(x)});
  const sel=document.getElementById("fT");if(sel)sel.innerHTML=TECHS.map(x=>`<option>${x}</option>`).join("")}
 const EDGES=["L2,3 (2p)","K (1s)","M (3p/3d)","Kβ XES"];
-const S={els:new Set(),tq:new Set(),ed:new Set(),op:false,q:"",sort:"yd",hasSp:false,y0:null,y1:null,show:60,plot:[],norm:false};
+const S={ptech:"",pte:new Set(),els:new Set(),tq:new Set(),ed:new Set(),op:false,q:"",sort:"yd",hasSp:false,y0:null,y1:null,show:60,plot:[],norm:false};
 const LS="xsl_user_spectra_v1";
 let USER=[];try{USER=JSON.parse(localStorage.getItem(LS)||"[]")}catch(e){USER=[]}
 const saveUser=()=>{try{localStorage.setItem(LS,JSON.stringify(USER))}catch(e){}};
@@ -120,16 +132,32 @@ const specByPaper=()=>{const m={};allSpec().forEach(s=>{(m[s.paper]=m[s.paper]||
 const specEls=()=>new Set(allSpec().map(s=>s.element));
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-function elCounts(){const c={};PAPERS.forEach(p=>p.e.forEach(e=>c[e]=(c[e]||0)+1));allSpec().forEach(s=>{if(!c[s.element])c[s.element]=0});return c}
-function drawPT(){const c=elCounts(),se=specEls(),max=Math.max(...Object.values(c),1);const box=$("pt");box.innerHTML="";
+const TECH_EDGES={
+ XAS:[["K (1s)","K-edge|K edge|K pre-edge|1s x-ray abs|1s XAS|XANES|\\bK\\b|1s"],["L2,3 (2p)","L2,3|L-edge|L edge|L edges|L3|2p x-ray abs|2p XAS|2p absorption|L-2,L-3|L2,L3"],["M (3d/3p)","M4,5|M2,3|M-edge|3d XAS|3d x-ray abs|\\bM\\b"],["O K (ligand)","oxygen 1s|O K|oxygen K|O 1s"]],
+ XES:[["Kβ main line","Kβ|Kbeta|1s3p|Kβ1,3"],["Valence-to-core","valence|Kβ2,5|Kβ''"],["Kα","Kα|Kalpha"]],
+ RIXS:[["2p3d (L-edge)","2p3d|2p4d|\\bL3\\b|L-edge|L edge|L3"],["1s2p / 1s3p (K-edge)","1s2p|1s3p|K pre-edge|K-edge|K edge"]],
+ PES:[["1s","\\b1s\\b"],["2p","\\b2p\\b"],["3s / 3p","3s|3p"],["Valence band","valence"]],
+ RPES:[["2p (L-edge) resonance","2p|L3|L edge|L-edge"],["3p / 4d resonance","3p|4d|M4,5|M2,3"]]};
+function techPapers(){if(!S.ptech)return PAPERS;return PAPERS.filter(p=>p.tq.includes(S.ptech)||allSpec().some(s=>s.paper===p.id&&s.technique===S.ptech))}
+function techSpec(){return allSpec().filter(s=>!S.ptech||s.technique===S.ptech)}
+function edgeOk(p){if(!S.pte.size)return true;const txt=p.t+" "+allSpec().filter(s=>s.paper===p.id&&(!S.ptech||s.technique===S.ptech)).map(s=>(s.edge||"")+" "+(s.conditions||"")).join(" ");const defs=TECH_EDGES[S.ptech]||[];for(const e of S.pte){const d=defs.find(x=>x[0]==e);if(d&&!new RegExp(d[1],"i").test(txt))return false}return true}
+function elCounts(){const c={};techPapers().filter(edgeOk).forEach(p=>p.e.forEach(e=>c[e]=(c[e]||0)+1));techSpec().forEach(s=>{if(!c[s.element])c[s.element]=0});return c}
+function specCounts(){const c={};techSpec().filter(s=>{const p=PAPERS.find(q=>q.id===s.paper);return !p||edgeOk(p)}).forEach(s=>c[s.element]=(c[s.element]||0)+1);return c}
+function drawTabs(){const tabs=[["","All"]].concat(TECHS.map(t=>[t,t]));$("ptTabs").innerHTML=tabs.map(([k,l])=>{const n=k?PAPERS.filter(p=>p.tq.includes(k)).length:PAPERS.length,ns=allSpec().filter(s=>!k||s.technique===k).length;return `<button class="tab${S.ptech===k?" on":""}" data-tab="${esc(k)}">${esc(l)}<span class="n">${n}${ns?` · ${ns} sp.`:""}</span></button>`}).join("")+`<button class="tab more" id="tabMore" title="Add a technique category">+ more later</button>`;
+ document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{S.ptech=b.dataset.tab;S.pte.clear();S.tq.clear();if(S.ptech)S.tq.add(S.ptech);S.show=60;render()});
+ $("tabMore").onclick=()=>{$("tqForm").style.display="flex";$("tqN").focus();$("tqForm").scrollIntoView({behavior:"smooth",block:"center"})};
+ const defs=TECH_EDGES[S.ptech]||[];$("ptEdges").innerHTML=defs.length?`<span class="lbl">${esc(S.ptech)} edge</span>`+defs.map(([n])=>`<span class="chip${S.pte.has(n)?" on":""}" data-pte="${esc(n)}">${esc(n)}</span>`).join(""):(S.ptech?`<span class="note">No edge sub-filters defined for ${esc(S.ptech)} yet.</span>`:`<span class="note">Pick a technique tab to see its edges.</span>`);
+ document.querySelectorAll("[data-pte]").forEach(c=>c.onclick=()=>{const n=c.dataset.pte;S.pte.has(n)?S.pte.delete(n):S.pte.add(n);S.show=60;render()});
+ const parts=[];if(S.ptech)parts.push(S.ptech);if(S.pte.size)parts.push([...S.pte].join(" + "));if(S.els.size)parts.push([...S.els].join(", "));$("selInfo").textContent=parts.length?"Showing: "+parts.join(" · "):""}
+function drawPT(){drawTabs();const c=elCounts(),sc=specCounts(),max=Math.max(...Object.values(c),1);const box=$("pt");box.innerHTML="";
  const pos={};PT.forEach(([s,r,col])=>pos[r+"-"+col]=s);
  for(let r=1;r<=10;r++){if(r==8){for(let k=0;k<18;k++){const d=document.createElement("div");d.style.height="6px";box.appendChild(d)}continue}
   for(let col=1;col<=18;col++){const s=pos[r+"-"+col];const d=document.createElement("div");
    if(!s){d.className="el gap";box.appendChild(d);continue}
    const n=c[s];d.className="el"+(n!==undefined?" has":"")+(S.els.has(s)?" sel":"");
    if(n!==undefined&&!S.els.has(s)){const a=.08+.55*Math.sqrt(n/max);d.style.background=`rgba(36,88,214,${a})`;if(a>.4)d.style.color="#fff"}
-   d.innerHTML=`<b>${s}</b><small>${n||""}</small>`+(se.has(s)?'<span class="sp"></span>':"");
-   if(n!==undefined){d.title=`${s}: ${n} papers`;d.onclick=()=>{S.els.has(s)?S.els.delete(s):S.els.add(s);S.show=60;render()}}
+   d.innerHTML=`<b>${s}</b><small>${n||""}</small>`+(sc[s]?`<span class="sp">${sc[s]}</span>`:"");
+   if(n!==undefined){d.title=`${s}: ${n} papers${sc[s]?`, ${sc[s]} digitized spectra`:""}${S.ptech?` (${S.ptech})`:""}`;d.onclick=()=>{S.els.has(s)?S.els.delete(s):S.els.add(s);S.show=60;render()}}
    box.appendChild(d)}}}
 function chips(id,list,set){const b=$(id);b.innerHTML="";list.forEach(t=>{const n=PAPERS.filter(p=>(id=="tq"?p.tq:p.ed).includes(t)).length;const c=document.createElement("span");c.className="chip"+(set.has(t)?" on":"");c.textContent=`${t} (${n})`;c.onclick=()=>{set.has(t)?set.delete(t):set.add(t);S.show=60;render()};b.appendChild(c)})}
 function filtered(){const q=S.q.toLowerCase().trim(),sp=specByPaper();
@@ -137,12 +165,12 @@ function filtered(){const q=S.q.toLowerCase().trim(),sp=specByPaper();
   for(const e of S.els)if(!pe.has(e))return false;
   for(const t of S.tq)if(!p.tq.includes(t))return false;
   for(const t of S.ed)if(!p.ed.includes(t))return false;
-  if(S.op&&!p.op)return false;if(S.hasSp&&!ss.length)return false;
+  if(S.op&&!p.op)return false;if(!edgeOk(p))return false;if(S.hasSp&&!ss.length)return false;
   if(S.y0&&p.y<S.y0)return false;if(S.y1&&p.y>S.y1)return false;
   if(q){const hay=(p.t+" "+p.a+" "+p.j+" "+p.c.join(" ")+" "+ss.map(s=>s.compound+" "+s.element).join(" ")).toLowerCase();if(!q.split(/\s+/).every(w=>hay.includes(w)))return false}
   return true});
  r.sort(S.sort=="yd"?(a,b)=>b.y-a.y||b.id-a.id:S.sort=="ya"?(a,b)=>a.y-b.y:(a,b)=>a.t.localeCompare(b.t));return r}
-function render(){drawPT();chips("tq",TECHS,S.tq);chips("ed",EDGES,S.ed);$("opChip").className="chip op"+(S.op?" on":"");
+function render(){S.ptech=S.tq.size==1?[...S.tq][0]:(S.tq.size?S.ptech:"");drawPT();chips("tq",TECHS,S.tq);$("opChip").className="chip op"+(S.op?" on":"");
  const r=filtered(),sp=specByPaper();$("cnt").textContent=`${r.length} of ${PAPERS.length} papers`;
  $("tb").innerHTML=r.slice(0,S.show).map(p=>{const ss=sp[p.id]||[];
   return `<tr><td>${p.y||""}</td><td class="t">${p.pdf?`<a href="${p.pdf}" target="_blank" rel="noopener">${esc(p.t)}</a>`:esc(p.t)}<div class="meta">${esc(p.a)} · ${esc(p.j)}</div></td>
@@ -157,7 +185,7 @@ function render(){drawPT();chips("tq",TECHS,S.tq);chips("ed",EDGES,S.ed);$("opCh
  const ns=allSpec().length,nop=PAPERS.filter(p=>p.op).length,nel=Object.keys(elCounts()).length;
  $("stats").innerHTML=`<div class="stat"><b>${PAPERS.length}</b>papers</div><div class="stat"><b>${nel}</b>elements tagged</div><div class="stat"><b>${nop}</b>operando / in situ</div><div class="stat"><b>${ns}</b>digitized spectra</div><div class="stat"><b>${new Set(allSpec().map(s=>s.compound)).size}</b>compounds with spectra</div>`}
 function renderAll(){const q=($("sq").value||"").toLowerCase();const A=allSpec();const els=S.els;
- const list=A.map((s,i)=>[s,i]).filter(([s])=>(!els.size||els.has(s.element))&&(!q||(s.element+" "+s.compound+" "+s.edge+" "+s.technique+" "+s.conditions).toLowerCase().includes(q)));
+ const list=A.map((s,i)=>[s,i]).filter(([s])=>(!S.ptech||s.technique===S.ptech)&&(()=>{const p=PAPERS.find(q=>q.id===s.paper);return !p||edgeOk(p)})()&&(!els.size||els.has(s.element))&&(!q||(s.element+" "+s.compound+" "+s.edge+" "+s.technique+" "+s.conditions).toLowerCase().includes(q)));
  $("allHdr").textContent=`All digitized spectra (${list.length}${list.length!=A.length?" of "+A.length:""})`;
  $("allSp").innerHTML=list.length?`<table><tbody>${list.map(([s,i])=>`<tr><td><b>${esc(s.element)}</b> ${esc(s.edge||"")}</td><td>${esc(s.compound)}<div class="meta note">${esc(s.technique||"")} · ${esc(s.type||"")} · ${s.confidence?"confidence "+esc(s.confidence)+" · ":""}${(()=>{const p=PAPERS.find(q=>q.id===s.paper);return p&&p.pdf?`<a href="${p.pdf}" target="_blank" rel="noopener">${esc(s.source||p.t)}</a>`:esc(s.source||"")})()}<br>${esc(s.conditions||"")}</div></td><td><button class="btn s" data-add="${i}">${S.plot.includes(s)?"✓":"+ plot"}</button></td></tr>`).join("")}</tbody></table>`:'<div class="empty">No spectra match.</div>';
  document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>{const s=allSpec()[+b.dataset.add];if(!S.plot.includes(s))S.plot.push(s);drawChart();renderAll()})}
@@ -186,7 +214,7 @@ $("sq").oninput=()=>renderAll();
 $("q").oninput=e=>{S.q=e.target.value;S.show=60;render()};$("sort").onchange=e=>{S.sort=e.target.value;render()};
 $("hasSp").onchange=e=>{S.hasSp=e.target.checked;render()};$("opChip").onclick=()=>{S.op=!S.op;render()};
 $("y0").oninput=e=>{S.y0=+e.target.value||null;render()};$("y1").oninput=e=>{S.y1=+e.target.value||null;render()};
-$("clrEl").onclick=()=>{S.els.clear();render()};$("clrPlot").onclick=()=>{S.plot=[];drawChart()};
+$("clrEl").onclick=()=>{S.els.clear();S.pte.clear();S.ptech="";S.tq.clear();render()};$("clrPlot").onclick=()=>{S.plot=[];drawChart()};
 $("normBtn").onclick=()=>{S.norm=!S.norm;$("normBtn").textContent="Normalize: "+(S.norm?"on":"off");drawChart()};
 $("addTq").onclick=()=>{const f=$("tqForm");f.style.display=f.style.display=="none"?"flex":"none";showCustom()};
 function showCustom(){$("tqList").innerHTML=CUSTOM.length?"Custom: "+CUSTOM.map((c,i)=>`${esc(c.n)} <a href="#" data-dt="${i}">remove</a>`).join(" · "):"";
