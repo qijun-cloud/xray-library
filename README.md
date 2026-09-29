@@ -9,4 +9,4 @@ A searchable library of X-ray spectra (XAS, XES, RIXS, PES, RPES), organized by 
 
 - The spectra were traced from published figures. Energies should be close to the printed axes; intensities are mostly in arbitrary units, and stacked curves are baseline-shifted. Use the original data for quantitative work.
 - **Please cite the original paper and figure** listed with each spectrum.
-- No reprint PDFs are hosted here; the page links to the de Groot group website.
+- No reprint PDFs are hosted here
