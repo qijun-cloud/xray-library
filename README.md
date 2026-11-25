@@ -7,9 +7,6 @@ A searchable library of X-ray spectra (XAS, XES, RIXS, PES, RPES), organized by 
 
 ## Important
 
-If the web app shows an error or does not load, please wait a few minutes and try again. The app is hosted on Streamlit Community Cloud, and short outages or a "waking up" screen come from the hosting service, not from MuchXs.
-
-
 
 - The spectra were traced from published figures. Energies should be close to the printed axes; intensities are mostly in arbitrary units, and stacked curves are baseline-shifted. Use the original data for quantitative work.
 - **Please cite the original paper and figure** listed with each spectrum.
